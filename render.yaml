@@ -11,10 +11,3 @@ services:
     numInstances: 1
     healthCheckPath: /health
     autoDeploy: true
-
-# Database (if needed)
-databases:
-  - name: godot-game-db
-    plan: free
-    databaseName: godot_game
-    user: godot_user
