@@ -1,0 +1,31 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Godot
+      uses: firebelley/setup-godot@v1
+      with:
+        godot-version: '4.2.1'
+    
+    - name: Export Headless Server
+      run: |
+        mkdir -p export/linux_server
+        godot --headless --export "Linux Headless Server" export/linux_server/godot_server.x86_64
+    
+    - name: Deploy to Render
+      uses: johnbeynon/render-deploy-action@v0.0.8
+      with:
+        service-id: ${{ secrets.RENDER_SERVICE_ID }}
+        api-key: ${{ secrets.RENDER_API_KEY }}
