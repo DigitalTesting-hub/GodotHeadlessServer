@@ -1,11 +1,17 @@
 extends Node3D
 
 @onready var address_input: LineEdit = $Menu/IPInput
-@onready var player_name_input: LineEdit = $Menu/NameInput  # NEW: Name input field
+@onready var player_name_input: LineEdit = $Menu/NameInput
 @onready var spawn_player: Node3D = $SpawnPlayer
 @onready var menu: Control = $Menu
 @onready var active_player_label: Label = $GameUI/Active
 @onready var multiplayer_chat: Control = $MultiplayerChat
+
+# Character selection buttons
+@onready var red_top_button: Button = $Menu/RedTopButton
+@onready var black_outfit_button: Button = $Menu/BlackOutfitButton
+@onready var red_tshirt_button: Button = $Menu/RedTShirtButton
+@onready var scarf_shades_button: Button = $Menu/ScarfShadesButton
 
 var active_players_count: int = 0
 var stored_player_data = {}
@@ -20,6 +26,8 @@ var character_scenes = {
 	"ScarfShades": "res://scenes/BlueTShirt.tscn"
 }
 
+# Selected character
+var selected_character: String = "RedTop"  # Default character
 var chat_visible = false
 
 func _ready():
@@ -33,6 +41,19 @@ func _ready():
 	menu.show()
 	active_player_label.hide()
 	multiplayer_chat.set_process_input(true)
+	
+	# Connect character selection buttons
+	if red_top_button:
+		red_top_button.pressed.connect(_on_red_top_selected)
+	if black_outfit_button:
+		black_outfit_button.pressed.connect(_on_black_outfit_selected)
+	if red_tshirt_button:
+		red_tshirt_button.pressed.connect(_on_red_tshirt_selected)
+	if scarf_shades_button:
+		scarf_shades_button.pressed.connect(_on_scarf_shades_selected)
+	
+	# Set default character as selected
+	_update_character_selection()
 	
 	Network.server_disconnected.connect(_on_server_disconnected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
@@ -50,6 +71,39 @@ func _setup_headless_mode():
 	# Setup network for headless
 	Network.server_disconnected.connect(_on_server_disconnected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+
+# ============ CHARACTER SELECTION FUNCTIONS ============
+
+func _on_red_top_selected():
+	selected_character = "RedTop"
+	_update_character_selection()
+	print("Selected character: RedTop")
+
+func _on_black_outfit_selected():
+	selected_character = "BlackOutfit"
+	_update_character_selection()
+	print("Selected character: BlackOutfit")
+
+func _on_red_tshirt_selected():
+	selected_character = "RedTShirt"
+	_update_character_selection()
+	print("Selected character: RedTShirt")
+
+func _on_scarf_shades_selected():
+	selected_character = "ScarfShades"
+	_update_character_selection()
+	print("Selected character: ScarfShades")
+
+func _update_character_selection():
+	# Update button appearances to show which character is selected
+	if red_top_button:
+		red_top_button.modulate = Color(1, 1, 1, 1) if selected_character == "RedTop" else Color(0.7, 0.7, 0.7, 0.7)
+	if black_outfit_button:
+		black_outfit_button.modulate = Color(1, 1, 1, 1) if selected_character == "BlackOutfit" else Color(0.7, 0.7, 0.7, 0.7)
+	if red_tshirt_button:
+		red_tshirt_button.modulate = Color(1, 1, 1, 1) if selected_character == "RedTShirt" else Color(0.7, 0.7, 0.7, 0.7)
+	if scarf_shades_button:
+		scarf_shades_button.modulate = Color(1, 1, 1, 1) if selected_character == "ScarfShades" else Color(0.7, 0.7, 0.7, 0.7)
 
 # ============ MULTIPLAYER MODE FUNCTIONS ============
 
@@ -82,8 +136,8 @@ func _on_join_pressed():
 	if ":" not in address:
 		address += ":8080"  # Default port
 	
-	print("Joining server: ", address, " as: ", player_name)
-	Network.join_game(player_name, "RedTop", address)  # Default character: RedTop
+	print("Joining server: ", address, " as: ", player_name, " with character: ", selected_character)
+	Network.join_game(player_name, selected_character, address)
 
 func _show_error(message: String):
 	# Show error message to player
@@ -100,7 +154,7 @@ func _add_player_headless(id: int, player_info: Dictionary):
 	var nick = player_info.get("nick", "Player")
 	player_states[id] = {"nick": nick, "alive": true, "color": Color.WHITE}
 	
-	print("Headless: Player ", id, " (", nick, ") connected")
+	print("Headless: Player ", id, " (", nick, ") connected with character: ", player_info.get("character", "Unknown"))
 	
 	# Update player display
 	if multiplayer.is_server():
@@ -112,7 +166,7 @@ func _add_player(id: int, player_info: Dictionary):
 	if spawn_player.has_node(str(id)) or id in players_pending_removal:
 		return
 	
-	# Get character name from player_info (default to RedTop)
+	# Get character name from player_info
 	var character_name = player_info.get("character", "RedTop")
 	print("Player ", id, " loading character: ", character_name)
 	
@@ -121,6 +175,7 @@ func _add_player(id: int, player_info: Dictionary):
 	var character_scene = load(scene_path)
 	
 	if not character_scene:
+		print("ERROR: Character scene not found: ", character_name)
 		return
 	
 	var player = character_scene.instantiate()
@@ -199,8 +254,6 @@ func _safe_remove_player(id: int):
 
 func _remove_from_pending_removal(id: int):
 	players_pending_removal.erase(id)
-
-# REMOVED: _on_quit_pressed() function completely
 
 # ============ PLAYER STATES AND DISPLAY ============
 
