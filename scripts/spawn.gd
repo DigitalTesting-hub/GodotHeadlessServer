@@ -1,6 +1,7 @@
 extends Node3D
 
 @onready var address_input: LineEdit = $Menu/IPInput
+@onready var player_name_input: LineEdit = $Menu/NameInput  # NEW: Name input field
 @onready var spawn_player: Node3D = $SpawnPlayer
 @onready var menu: Control = $Menu
 @onready var active_player_label: Label = $GameUI/Active
@@ -61,16 +62,14 @@ func _on_player_connected(peer_id, player_info):
 func _on_peer_disconnected(id):
 	if multiplayer.is_server():
 		_safe_remove_player(id)
-		
-# REMOVED: _on_host_pressed() function completely
 
 func _on_join_pressed():
 	menu.hide()
 	
-	# Get player name from GameManager
-	var player_name = "Player"
-	if GameManager.is_logged_in and GameManager.current_player_data:
-		player_name = GameManager.current_player_data.get("username", "Player")
+	# Get player name from input field
+	var player_name = player_name_input.text.strip_edges()
+	if player_name.is_empty():
+		player_name = "Player"  # Default name
 	
 	var address = address_input.text.strip_edges()
 	
@@ -83,8 +82,8 @@ func _on_join_pressed():
 	if ":" not in address:
 		address += ":8080"  # Default port
 	
-	print("Joining server: ", address)
-	Network.join_game(player_name, "player", address)
+	print("Joining server: ", address, " as: ", player_name)
+	Network.join_game(player_name, "RedTop", address)  # Default character: RedTop
 
 func _show_error(message: String):
 	# Show error message to player
@@ -113,14 +112,11 @@ func _add_player(id: int, player_info: Dictionary):
 	if spawn_player.has_node(str(id)) or id in players_pending_removal:
 		return
 	
-	# Each player loads their exact character from their local GameManager
-	var character_name = "RedTop"
+	# Get character name from player_info (default to RedTop)
+	var character_name = player_info.get("character", "RedTop")
+	print("Player ", id, " loading character: ", character_name)
 	
-	if GameManager.is_logged_in and GameManager.current_player_data:
-		character_name = GameManager.current_player_data.get("character")
-		print("Player ", id, " loading character: ", character_name)
-	
-	# Load the exact character scene they selected
+	# Load the character scene
 	var scene_path = character_scenes.get(character_name)
 	var character_scene = load(scene_path)
 	
@@ -204,8 +200,7 @@ func _safe_remove_player(id: int):
 func _remove_from_pending_removal(id: int):
 	players_pending_removal.erase(id)
 
-func _on_quit_pressed() -> void:
-	get_tree().quit()
+# REMOVED: _on_quit_pressed() function completely
 
 # ============ PLAYER STATES AND DISPLAY ============
 
