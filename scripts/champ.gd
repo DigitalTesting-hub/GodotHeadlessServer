@@ -1454,10 +1454,4 @@ func _enable_after_vehicle_exit():
 	
 	print("Player fully enabled after driver exit")
 
-# Add to champ.gd
-func return_to_lobby():
-	"""Player-initiated return to lobby"""
-	if not is_multiplayer_authority() or is_headless_server:
-		return
-	
-	print("Player returning to lobby")
+# REMOVED: return_to_lobby() function completely
