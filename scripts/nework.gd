@@ -66,7 +66,18 @@ func start_host(nickname: String, character: String, port: int = DEFAULT_PORT):
 
 func join_game(nickname: String, character: String, address: String = "127.0.0.1", port: int = DEFAULT_PORT):
 	var peer = ENetMultiplayerPeer.new()
-	var error = peer.create_client(address, port)
+	
+	# Parse address:port format
+	var server_address = address
+	var server_port = port
+	
+	if ":" in address:
+		var parts = address.split(":")
+		if parts.size() == 2:
+			server_address = parts[0]
+			server_port = int(parts[1])
+	
+	var error = peer.create_client(server_address, server_port)
 	if error:
 		return error
 
