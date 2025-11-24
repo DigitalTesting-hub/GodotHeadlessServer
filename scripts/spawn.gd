@@ -35,9 +35,6 @@ func _ready():
 	
 	Network.server_disconnected.connect(_on_server_disconnected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
-	
-	if multiplayer.is_server():
-		Network.connect("player_connected", Callable(self, "_on_player_connected"))
 
 func _setup_headless_mode():
 	print("🏃 Headless mode activated - skipping visual setup")
@@ -52,9 +49,6 @@ func _setup_headless_mode():
 	# Setup network for headless
 	Network.server_disconnected.connect(_on_server_disconnected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
-	
-	if multiplayer.is_server():
-		Network.connect("player_connected", Callable(self, "_on_player_connected"))
 
 # ============ MULTIPLAYER MODE FUNCTIONS ============
 
@@ -68,20 +62,7 @@ func _on_peer_disconnected(id):
 	if multiplayer.is_server():
 		_safe_remove_player(id)
 		
-func _on_host_pressed():
-	menu.hide()
-	
-	# Get player name from GameManager
-	var player_name = "Player"
-	if GameManager.is_logged_in and GameManager.current_player_data:
-		player_name = GameManager.current_player_data.get("username", "Player")
-	
-	Network.start_host(player_name, "player")
-	# Add host as first player
-	await get_tree().process_frame
-	var host_id = multiplayer.get_unique_id()
-	if Network.players.has(host_id):
-		_add_player(host_id, Network.players[host_id])
+# REMOVED: _on_host_pressed() function completely
 
 func _on_join_pressed():
 	menu.hide()
@@ -91,7 +72,25 @@ func _on_join_pressed():
 	if GameManager.is_logged_in and GameManager.current_player_data:
 		player_name = GameManager.current_player_data.get("username", "Player")
 	
-	Network.join_game(player_name, "player", address_input.text.strip_edges())
+	var address = address_input.text.strip_edges()
+	
+	# Validate address
+	if address.is_empty():
+		_show_error("Please enter server address")
+		return
+	
+	# Add default port if not specified
+	if ":" not in address:
+		address += ":8080"  # Default port
+	
+	print("Joining server: ", address)
+	Network.join_game(player_name, "player", address)
+
+func _show_error(message: String):
+	# Show error message to player
+	print("ERROR: ", message)
+	# Show menu again to allow retry
+	menu.show()
 
 func _add_player_headless(id: int, player_info: Dictionary):
 	"""Headless server player management - no visuals"""
